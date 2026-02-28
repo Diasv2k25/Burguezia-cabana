@@ -12,6 +12,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="BURGUEZIA">
     <meta name="theme-color" content="#ffcc00">
+
     <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
     
     <style>
@@ -110,7 +111,10 @@
         </div>
     </div>
 
-    <div id="cozinha" class="container"><div id="lista-ativos"></div></div>
+    <div id="cozinha" class="container">
+        <div id="lista-ativos"></div>
+    </div>
+
     <div id="caixa" class="container">
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:20px;">
             <div style="background:#222; padding:10px; border-radius:10px; text-align:center;">Dinheiro<br><b id="v-dinheiro" style="color:var(--verde)">0,00</b></div>
@@ -224,192 +228,6 @@
             carrinho.forEach(item => {
                 let taxaCartao = (pgt === 'Cartão') ? (item.qtdBurgers * 1.00) : 0;
                 let precoUnitario = item.preco + taxaCartao;
-                item.extras.forEach(e => { precoUnitario += (e.preco * e.qtd); });
-                t += (precoUnitario * item.qtd);
-            });
-            
-            t += taxaEntrega;
-            document.getElementById('display-total').innerText = t.toFixed(2);
-            const rec = parseFloat(document.getElementById('v-recebido').value) || 0;
-            document.getElementById('display-troco').innerText = (rec > t && pgt==='Dinheiro') ? `TROCO: R$ ${(rec-t).toFixed(2)}` : "";
-            return t;
-        }
-
-        function lancarPedido() {
-            if(!carrinho.length) return alert("Carrinho vazio!");
-            const total = calcTotal();
-            const rec = parseFloat(document.getElementById('v-recebido').value) || 0;
-            const ped = { id: pedidoEmEdicao ? pedidoEmEdicao.id : cont++, nome: document.getElementById('c-nome').value || "Cliente", whats: document.getElementById('c-whats').value, itens: JSON.parse(JSON.stringify(carrinho)), total: total, recebido: rec, troco: (rec > total ? rec - total : 0), pagto: document.getElementById('f-pagto').value, entrega: document.getElementById('f-entrega').value, hora: new Date().toLocaleTimeString().substr(0,5) };
-            if(pedidoEmEdicao) { ativos[ativos.findIndex(x=>x.id===ped.id)] = ped; cancelarEdicao(); }
-            else ativos.push(ped);
-            imprimir(ped); limparForm(); salvarDados();
-        }
-
-        function imprimir(p) {
-            const area = document.getElementById('print-area');
-            area.innerHTML = `<div style="text-align:center;"><h2 style="margin:0; font-size:24px;">BURGUEZIA</h2><b class="print-bold">PEDIDO #${p.id}</b><br><span>${p.hora}</span></div><div class="print-divider"></div><div style="font-size: 25px; text-align: center;"><b>CLIENTE:</b> ${p.nome}<br><b>TIPO:</b> ${p.entrega}</div><div class="print-divider"></div><div style="text-align: center;">${p.itens.map(i => `<div style="margin-bottom: 8px;"><b class="print-bold">${i.qtd}x ${i.nome}</b>${i.obs ? `<br><i>(Obs: ${i.obs})</i>` : ''}</div>`).join('')}</div><div class="print-divider"></div><div style="font-size: 25px; text-align: center;"><b>TOTAL: R$ ${p.total.toFixed(2)}</b><br><span style="font-size: 20px;">Pagto: ${p.pagto}</span>${p.troco > 0 ? `<br>Troco: R$ ${p.troco.toFixed(2)}` : ''}</div>`;
-            window.print();
-        }
-
-        function renderCozinha() {
-            const div = document.getElementById('lista-ativos'); div.innerHTML = "";
-            ativos.forEach(p => { div.innerHTML += `<div class="pedido-card"><b>#${p.id} - ${p.nome}</b><br><small>${p.itens.map(i=>`${i.qtd}x ${i.nome}`).join(', ')}</small><div style="display:flex; gap:5px; margin-top:10px;"><button class="btn-c" style="background:var(--azul)" onclick="editar(${p.id})">EDITAR</button><button class="btn-c" style="background:var(--vermelho)" onclick="cancelarPedido(${p.id})">CANCELAR</button><button class="btn-c" style="background:var(--verde); flex:1; color:#000" onclick="abrirMoto(${p.id})">CONCLUIR 🚀</button></div></div>`; });
-        }
-
-        function editar(id) { const p = ativos.find(x => x.id === id); pedidoEmEdicao = p; carrinho = JSON.parse(JSON.stringify(p.itens)); document.getElementById('c-nome').value = p.nome; document.getElementById('edit-msg').style.display = 'block'; document.getElementById('edit-id').innerText = p.id; document.getElementById('btn-final').innerText = "SALVAR ALTERAÇÕES ✅"; document.getElementById('btn-cancel-edit').style.display = 'block'; openTab('vendas', {target: document.querySelectorAll('.tab-btn')[0]}); renderCarrinho(); }
-        function cancelarPedido(id) { if(confirm("Cancelar #"+id+"?")) { const idx = ativos.findIndex(x=>x.id===id); ativos.splice(idx,1); salvarDados(); renderCozinha(); } }
-        function abrirMoto(id) { const p = ativos.find(x=>x.id===id); if(p.entrega!=='Entrega') return concluir(id, 'Balcão'); document.getElementById('modal-moto').style.display='flex'; document.getElementById('motos-btns').innerHTML = motoboys.map(m=>`<button onclick="concluir(${id},'${m}')" style="width:100%; padding:15px; margin-bottom:10px; background:#333; color:#fff; border:1px solid var(--amarelo); border-radius:10px;">${m}</button>`).join(''); }
-        function concluir(id, moto) { const idx = ativos.findIndex(x=>x.id===id); const p = ativos.splice(idx,1)[0]; p.moto = moto; finalizados.unshift(p); document.getElementById('modal-moto').style.display='none'; salvarDados(); renderCozinha(); }
-
-        function renderCaixa() {
-            let d=0, p=0, c=0; finalizados.forEach(ped => { if(ped.pagto==='Dinheiro') d+=ped.total; else if(ped.pagto==='Pix') p+=ped.total; else c+=ped.total; });
-            document.getElementById('v-dinheiro').innerText = d.toFixed(2); document.getElementById('v-pix').innerText = p.toFixed(2); document.getElementById('v-cartao').innerText = c.toFixed(2);
-            document.getElementById('lista-finalizados').innerHTML = finalizados.map(f => `<div class="pedido-card" style="font-size:12px">#${f.id} - R$ ${f.total.toFixed(2)} (${f.pagto}) - Moto: ${f.moto}</div>`).join('');
-        }
-
-        function gerarRelatorioWhatsApp() {
-            if(!finalizados.length) return alert("Nenhuma venda para o relatório!");
-            let d=0, p=0, c=0;
-            let texto = `📊 *RELATÓRIO BURGUEZIA CABANA*\n---------------------------\n`;
-            finalizados.forEach(f => {
-                texto += `✅ *#${f.id} - ${f.nome}*\n`;
-                f.itens.forEach(item => {
-                    texto += `• ${item.qtd}x ${item.nome}\n`;
-                    if(item.extras && item.extras.length > 0) texto += `  _Extras: ${item.extras.map(e=>e.nome).join(', ')}_\n`;
-                });
-                let infoPagto = `*Pagto:* ${f.pagto}`;
-                if(f.pagto === 'Dinheiro' && f.troco > 0) infoPagto = `*Pagto:* Dinheiro (Troco: R$ ${f.troco.toFixed(2)})`;
-                texto += `💰 *Valor:* R$ ${f.total.toFixed(2)}\n${infoPagto}\n🛵 *Moto:* ${f.moto}\n\n`;
-                if(f.pagto==='Dinheiro') d+=f.total; else if(f.pagto==='Pix') p+=f.total; else c+=f.total;
-            });
-            texto += `---------------------------\n💰 *RESUMO GERAL*\n💵 Dinheiro: R$ ${d.toFixed(2)}\n💎 Pix: R$ ${p.toFixed(2)}\n💳 Cartão: R$ ${c.toFixed(2)}\n🔥 *TOTAL DO DIA: R$ ${(d+p+c).toFixed(2)}*`;
-            window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`);
-        }
-
-        function openTab(id, e) { document.querySelectorAll('.container').forEach(c=>c.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.getElementById(id).classList.add('active'); e.target.classList.add('active'); if(id==='cozinha') renderCozinha(); if(id==='caixa') renderCaixa(); }
-        function updateUI() { document.getElementById('area-endereco').style.display = document.getElementById('f-entrega').value==='Entrega'?'block':'none'; calcTotal(); }
-        function limparForm() { carrinho=[]; document.querySelectorAll('input').forEach(i=>i.value=""); renderCarrinho(); }
-        function cancelarEdicao() { pedidoEmEdicao=null; document.getElementById('edit-msg').style.display='none'; document.getElementById('btn-cancel-edit').style.display='none'; document.getElementById('btn-final').innerText="LANÇAR PEDIDO ✅"; limparForm(); }
-        function finalizarDia() { if(confirm("Zerar tudo?")) { localStorage.clear(); location.reload(); } }
-        function alternarModoEstoque() { modoAjusteEstoque=!modoAjusteEstoque; document.getElementById('btn-estoque').innerText=modoAjusteEstoque?"MODO: ESGOTAR ⚠️":"ESTOQUE: LIVRE ✅"; renderCardapio(); }
-        function buscarCEP(c) { if(c.length===8) fetch(`https://viacep.com.br/ws/${c}/json/`).then(r=>r.json()).then(d=>{if(!d.erro){document.getElementById('e-rua').value=d.logradouro;document.getElementById('e-bairro').value=d.bairro;}}); }
-
-        renderCardapio();
-    </script>
-</body>
-</html>            <div style="background:#222; padding:10px; border-radius:10px; text-align:center;">Dinheiro<br><b id="v-dinheiro" style="color:var(--verde)">0,00</b></div>
-            <div style="background:#222; padding:10px; border-radius:10px; text-align:center;">Pix<br><b id="v-pix" style="color:var(--azul)">0,00</b></div>
-            <div style="background:#222; padding:10px; border-radius:10px; text-align:center;">Cartão<br><b id="v-cartao" style="color:var(--amarelo)">0,00</b></div>
-        </div>
-        <button onclick="gerarRelatorioWhatsApp()" style="width:100%; padding:18px; background:var(--azul); border:none; border-radius:12px; color:#fff; font-weight:bold; margin-bottom:20px; font-size:16px;">📊 RELATÓRIO PARA O PATRÃO</button>
-        <div id="lista-finalizados"></div>
-        <button onclick="finalizarDia()" style="width:100%; padding:20px; background:var(--vermelho); border:none; border-radius:15px; color:#fff; font-weight:bold; margin-top:30px;">FECHAR DIA / LIMPAR TUDO</button>
-    </div>
-
-    <div id="modal-moto" class="modal"><div class="modal-content"><h3 style="color:var(--amarelo);">Motoboy</h3><div id="motos-btns"></div></div></div>
-    <div id="print-area"></div>
-
-    <script>
-        const produtos = [
-            { id: 1, cat: "burger", nome: "Combo X-Tudo + Coca", preco: 14.99, qtdBurgers: 1 },
-            { id: 2, cat: "burger", nome: "3 X-Tudo + Mate 1L", preco: 39.99, qtdBurgers: 3 }, // CONTA COMO 3 BURGERS
-            { id: 3, cat: "burger", nome: "Burguezia", preco: 15.99, qtdBurgers: 1 },
-            { id: 4, cat: "burger", nome: "X-Tudo", preco: 10.99, qtdBurgers: 1 },
-            { id: 14, cat: "massas", nome: "Macarrão na Chapa", preco: 10.99, qtdBurgers: 0 },
-            { id: 5, cat: "bebida", nome: "Coca-Cola 2L", preco: 13.00, qtdBurgers: 0 },
-            { id: 6, cat: "bebida", nome: "Mate Couro 1L", preco: 8.00, qtdBurgers: 0 },
-            { id: 7, cat: "bebida", nome: "Coca 310ml", preco: 5.00, qtdBurgers: 0 },
-            { id: 13, cat: "bebida", nome: "Refrigerante Fanta", preco: 11.00, qtdBurgers: 0 },
-            { id: 15, cat: "bebida", nome: "Suco Del Valle", preco: 5.00, qtdBurgers: 0 }
-        ];
-
-        const adicionaisOpcoes = [
-            { nome: "Ovo", preco: 1.50, max: 1 }, { nome: "Presunto", preco: 1.50, max: 1 },
-            { nome: "Mussarela", preco: 2.00, max: 1 }, { nome: "Molho Especial", preco: 2.00, max: 4 },
-            { nome: "Carne", preco: 3.00, max: 1 }, { nome: "Bacon", preco: 3.00, max: 1 }
-        ];
-
-        let ativos = JSON.parse(localStorage.getItem('b_ativos')) || [];
-        let finalizados = JSON.parse(localStorage.getItem('b_finalizados')) || [];
-        let cont = parseInt(localStorage.getItem('b_cont')) || 1;
-        let estoqueEsgotado = JSON.parse(localStorage.getItem('b_estoque')) || {};
-        let carrinho = [], selecionadosNoModal = {}, itemSendoAdicionado = null;
-        let modoAjusteEstoque = false, pedidoEmEdicao = null;
-        const motoboys = ["Anderson", "Douglas", "Gustavo", "Mateus", "Rodrigo"];
-
-        function salvarDados() {
-            localStorage.setItem('b_ativos', JSON.stringify(ativos));
-            localStorage.setItem('b_finalizados', JSON.stringify(finalizados));
-            localStorage.setItem('b_cont', cont);
-            localStorage.setItem('b_estoque', JSON.stringify(estoqueEsgotado));
-        }
-
-        function renderCardapio() {
-            const b = document.getElementById('cardapio-burgers'), d = document.getElementById('cardapio-bebidas'), m = document.getElementById('cardapio-massas');
-            b.innerHTML = ""; d.innerHTML = ""; m.innerHTML = "";
-            produtos.forEach(p => {
-                const esg = estoqueEsgotado[p.id] ? "esgotado" : "";
-                const html = `<button class="prod-btn ${esg}" onclick="tratarCliqueProduto(${p.id})"><b>${p.nome}</b><span>R$ ${p.preco.toFixed(2)}</span></button>`;
-                if(p.cat === "burger") b.innerHTML += html; else if(p.cat === "massas") m.innerHTML += html; else d.innerHTML += html;
-            });
-        }
-
-        function tratarCliqueProduto(id) {
-            if(modoAjusteEstoque) { estoqueEsgotado[id] = !estoqueEsgotado[id]; salvarDados(); renderCardapio(); return; }
-            if(estoqueEsgotado[id]) return;
-            const p = produtos.find(x => x.id === id);
-            if(p.cat === "burger" || p.cat === "massas") abrirModalAdicionais(p); else addAoCarrinho(p, []);
-        }
-
-        function abrirModalAdicionais(p) { itemSendoAdicionado = p; selecionadosNoModal = {}; document.getElementById('modal-adicionais').style.display = 'flex'; renderOpcoesAdicionais(); }
-        
-        function renderOpcoesAdicionais() {
-            const area = document.getElementById('lista-adicionais-opcoes'); area.innerHTML = "";
-            adicionaisOpcoes.forEach(add => {
-                let qtd = selecionadosNoModal[add.nome] || 0;
-                area.innerHTML += `<div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><div><b>${add.nome}</b><br><small>R$ ${add.preco.toFixed(2)}</small></div>
-                <div class="qtd-controles"><button class="btn-qtd" onclick="alterarQtdModal('${add.nome}', -1)">-</button><span style="width:20px; text-align:center">${qtd}</span><button class="btn-qtd" onclick="alterarQtdModal('${add.nome}', 1)">+</button></div></div>`;
-            });
-        }
-
-        function alterarQtdModal(nome, val) {
-            let total = Object.values(selecionadosNoModal).reduce((a, b) => a + b, 0);
-            let item = adicionaisOpcoes.find(x => x.nome === nome);
-            let atual = selecionadosNoModal[nome] || 0;
-            if(val > 0) { if(total >= 4 || atual >= item.max) return; selecionadosNoModal[nome] = atual + 1; }
-            else if(atual > 0) selecionadosNoModal[nome] = atual - 1;
-            renderOpcoesAdicionais();
-        }
-
-        function confirmarAdicionais() {
-            let extras = [];
-            for(let n in selecionadosNoModal) if(selecionadosNoModal[n]>0) {
-                let info = adicionaisOpcoes.find(x=>x.nome===n); extras.push({nome:n, preco:info.preco, qtd:selecionadosNoModal[n]});
-            }
-            addAoCarrinho(itemSendoAdicionado, extras); fecharModalAdicionais();
-        }
-
-        function fecharModalAdicionais() { document.getElementById('modal-adicionais').style.display = 'none'; }
-        function addAoCarrinho(p, extras) { carrinho.push({...p, qtd:1, obs:"", extras: extras}); renderCarrinho(); }
-
-        function renderCarrinho() {
-            const div = document.getElementById('itens-selecionados');
-            if(!carrinho.length) { div.innerHTML = "<p style='text-align:center; color:#666;'>Carrinho vazio...</p>"; calcTotal(); return; }
-            div.innerHTML = carrinho.map((item, i) => `<div class="item-carrinho"><div class="item-header"><b>${item.nome}</b><div class="qtd-controles"><button class="btn-qtd" onclick="alterarQtd(${i},-1)">-</button><b>${item.qtd}</b><button class="btn-qtd" onclick="alterarQtd(${i},1)">+</button></div></div>${item.extras.length ? `<span style="font-size:11px; color:var(--amarelo)">Extras: ${item.extras.map(e=>`${e.qtd}x ${e.nome}`).join(', ')}</span>` : ''}<input type="text" class="obs-item" placeholder="Observação..." value="${item.obs}" onchange="carrinho[${i}].obs=this.value"></div>`).join('');
-            calcTotal();
-        }
-
-        function alterarQtd(i, v) { carrinho[i].qtd += v; if(carrinho[i].qtd <= 0) carrinho.splice(i, 1); renderCarrinho(); }
-
-        function calcTotal() {
-            let t = 0; const pgt = document.getElementById('f-pagto').value;
-            const taxaEntrega = parseFloat(document.getElementById('e-taxa').value) || 0;
-            
-            carrinho.forEach(item => {
-                // NOVO: Cobrando 1 real por hambúrguer individual dentro do combo
-                let taxaCartao = (pgt === 'Cartão') ? (item.qtdBurgers * 1.00) : 0;
-                let precoUnitario = item.preco + taxaCartao;
-                
                 item.extras.forEach(e => { precoUnitario += (e.preco * e.qtd); });
                 t += (precoUnitario * item.qtd);
             });
