@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BURGUEZIA CABANA - SISTEMA VIP</title>
-    
+    <title>BURGUEZIA CABANA - SISTEMA VIP</title> 
     <link rel="icon" type="image/png" href="https://img.icons8.com/emoji/96/hamburger-emoji.png">
-    <link rel="apple-touch-icon" href="https://img.icons8.com/emoji/192/hamburger-emoji.png">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="BURGUEZIA">
-    <meta name="theme-color" content="#ffcc00">
+<link rel="apple-touch-icon" href="https://img.icons8.com/emoji/192/hamburger-emoji.png">
 
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#ffcc00">
+    <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BURGUEZIA">
     <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
     
     <style>
@@ -111,10 +111,7 @@
         </div>
     </div>
 
-    <div id="cozinha" class="container">
-        <div id="lista-ativos"></div>
-    </div>
-
+    <div id="cozinha" class="container"><div id="lista-ativos"></div></div>
     <div id="caixa" class="container">
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:20px;">
             <div style="background:#222; padding:10px; border-radius:10px; text-align:center;">Dinheiro<br><b id="v-dinheiro" style="color:var(--verde)">0,00</b></div>
@@ -132,7 +129,7 @@
     <script>
         const produtos = [
             { id: 1, cat: "burger", nome: "Combo X-Tudo + Coca", preco: 14.99, qtdBurgers: 1 },
-            { id: 2, cat: "burger", nome: "3 X-Tudo + Mate 1L", preco: 39.99, qtdBurgers: 3 },
+            { id: 2, cat: "burger", nome: "3 X-Tudo + Mate 1L", preco: 39.99, qtdBurgers: 3 }, // CONTA COMO 3 BURGERS
             { id: 3, cat: "burger", nome: "Burguezia", preco: 15.99, qtdBurgers: 1 },
             { id: 4, cat: "burger", nome: "X-Tudo", preco: 10.99, qtdBurgers: 1 },
             { id: 14, cat: "massas", nome: "Macarrão na Chapa", preco: 10.99, qtdBurgers: 0 },
@@ -226,8 +223,10 @@
             const taxaEntrega = parseFloat(document.getElementById('e-taxa').value) || 0;
             
             carrinho.forEach(item => {
+                // NOVO: Cobrando 1 real por hambúrguer individual dentro do combo
                 let taxaCartao = (pgt === 'Cartão') ? (item.qtdBurgers * 1.00) : 0;
                 let precoUnitario = item.preco + taxaCartao;
+                
                 item.extras.forEach(e => { precoUnitario += (e.preco * e.qtd); });
                 t += (precoUnitario * item.qtd);
             });
